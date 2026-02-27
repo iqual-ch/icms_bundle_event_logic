@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Update hooks for ICMS Event bundle.
+ */
+
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Symfony\Component\Yaml\Yaml;
+
+/**
+ * Implements hook_install().
+ *
+ * Sets the module weight to 50 to ensure deployment hooks run in the
+ * correct order after core modules.
+ */
+function icms_bundle_event_logic_install() {
+  module_set_weight('icms_bundle_event_logic', 50);
+
+  // Grant "view event registrations" permission to relevant roles.
+  $roles_to_update = ['content_editor', 'administrator_client'];
+  foreach ($roles_to_update as $role_id) {
+    $role = \Drupal::entityTypeManager()->getStorage('user_role')->load($role_id);
+    if ($role && !\Drupal::moduleHandler()->moduleExists('webform')) {
+      \Drupal::logger('icms_bundle_event_logic')->warning(
+        'Webform module not enabled, skipping permission grant for @role',
+        ['@role' => $role_id]
+      );
+    }
+    elseif ($role) {
+      $role->grantPermission('view event registrations');
+      $role->save();
+    }
+  }
+
+  // Attempt to install webform during module installation.
+  // Note: During site installation with --existing-config, this may be
+  // overwritten by config import. The icms_admin.webform_install_subscriber
+  // event subscriber will reinstall webforms after config import completes.
+  icms_admin_install_webform('webform.webform.icms_event_registration', 'icms_bundle_event_logic');
+}
+
+/**
+ * Add postprocess_query weight to smart_date_instance processor.
+ */
+function icms_bundle_event_logic_update_9001() {
+  $config_factory = \Drupal::configFactory();
+  $config = $config_factory->getEditable('search_api.index.content_search');
+
+  // Check if the smart_date_instance processor exists.
+  $processor_settings = $config->get('processor_settings.smart_date_instance');
+  if ($processor_settings) {
+    // Add the postprocess_query weight if not already set.
+    $weights = $config->get('processor_settings.smart_date_instance.weights') ?: [];
+    if (!isset($weights['postprocess_query'])) {
+      $config->set('processor_settings.smart_date_instance.weights.postprocess_query', 0);
+      $config->save(TRUE);
+      return new TranslatableMarkup('Added postprocess_query weight to smart_date_instance processor.');
+    }
+  }
+
+  return new TranslatableMarkup('smart_date_instance processor already configured correctly.');
+}

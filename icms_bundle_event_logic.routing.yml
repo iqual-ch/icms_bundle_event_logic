@@ -1,0 +1,14 @@
+icms_bundle_event_logic.registrations:
+  path: '/node/{node}/registrations'
+  defaults:
+    _controller: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::view'
+    _title: 'Registrations'
+  requirements:
+    _permission: 'view event registrations'
+    _custom_access: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::access'
+    node: \d+
+  options:
+    _admin_route: TRUE
+    parameters:
+      node:
+        type: entity:node

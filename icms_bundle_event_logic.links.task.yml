@@ -1,0 +1,5 @@
+icms_bundle_event_logic.registrations:
+  route_name: icms_bundle_event_logic.registrations
+  base_route: entity.node.canonical
+  title: 'Registrations'
+  weight: 10

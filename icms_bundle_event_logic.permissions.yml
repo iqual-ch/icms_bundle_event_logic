@@ -1,0 +1,3 @@
+view event registrations:
+  title: 'View event registrations'
+  description: 'Allow users to view webform submissions for events'

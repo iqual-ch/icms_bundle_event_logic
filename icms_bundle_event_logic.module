@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks for icms_bundle_event_logic module.
+ */
+
+use Drupal\node\NodeInterface;
+use Drupal\search_api\Query\ResultSetInterface;
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Dynamically populates the occurrence_id exposed filter on the
+ * event_registrations view with options derived from the node's
+ * event occurrence paragraphs, displaying formatted dates as labels.
+ */
+function icms_bundle_event_logic_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if ($form_id !== 'views_exposed_form') {
+    return;
+  }
+
+  $storage = $form_state->getStorage();
+  $view = $storage['view'] ?? NULL;
+  if (!$view || $view->id() !== 'event_registrations') {
+    return;
+  }
+
+  // Get the node ID from the view's arguments.
+  $args = $view->args;
+  $node_id = $args[0] ?? NULL;
+  if (!$node_id) {
+    return;
+  }
+
+  // Load the node and its occurrence paragraphs.
+  $node = \Drupal::entityTypeManager()->getStorage('node')->load($node_id);
+  if (!$node instanceof NodeInterface || !$node->hasField('field_icms_event_occurrence')) {
+    return;
+  }
+
+  $occurrences = $node->get('field_icms_event_occurrence')->referencedEntities();
+  if (empty($occurrences)) {
+    return;
+  }
+
+  // Build select options with formatted date labels.
+  $options = ['' => t('- All -')];
+  foreach ($occurrences as $paragraph) {
+    $paragraph_id = $paragraph->id();
+    $label = $paragraph_id;
+
+    // Format the smart_date field value as a readable date.
+    if ($paragraph->hasField('field_icms_date') && !$paragraph->get('field_icms_date')->isEmpty()) {
+      $date_value = $paragraph->get('field_icms_date')->first();
+      $start = $date_value->get('value')->getValue();
+      if ($start) {
+        $label = date('d.m.Y - H:i', (int) $start);
+      }
+    }
+
+    $options[$paragraph_id] = $label;
+  }
+
+  // The exposed filter uses identifier 'occurrence_id' (non-grouped).
+  if (!isset($form['occurrence_id'])) {
+    return;
+  }
+
+  // Replace the filter element with a select.
+  $default_value = $form['occurrence_id']['#default_value'] ?? '';
+  $form['occurrence_id'] = [
+    '#type' => 'select',
+    '#title' => t('Event date'),
+    '#options' => $options,
+    '#default_value' => $default_value,
+  ];
+}
+
+/**
+ * Implements hook_search_api_results_alter().
+ *
+ * Prevents de-duplication of expanded event items in GraphQL responses by
+ * marking each entity with a unique identifier based on the search item delta.
+ */
+function icms_bundle_event_logic_search_api_results_alter(ResultSetInterface &$results) {
+  $items = $results->getResultItems();
+
+  foreach ($items as $item) {
+    $item_id = $item->getId();
+
+    // Check if this is an expanded item with a delta suffix.
+    if (preg_match('/^(.+):(\d+)$/', $item_id, $matches)) {
+      $delta = (int) $matches[2];
+
+      try {
+        $entity = $item->getOriginalObject()->getValue();
+
+        // Add a temporary property to make this entity unique for GraphQL.
+        // GraphQL uses object identity, so we can't just set a property.
+        // Instead, store it in the item's extra data which GraphQL can access.
+        $item->setExtraData('_event_date_delta', $delta);
+        $item->setExtraData('_event_date_instance_id', $item_id);
+
+        // Also set it on the entity as a temporary value.
+        if ($entity && method_exists($entity, 'set')) {
+          $entity->_event_date_delta = $delta;
+          $entity->_search_api_item_id = $item_id;
+        }
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('icms_bundle_event_logic')->error(
+          'Error in search_api_results_alter for item @id: @message',
+          ['@id' => $item_id, '@message' => $e->getMessage()]
+        );
+      }
+    }
+  }
+}

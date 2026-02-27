@@ -1,0 +1,8 @@
+name: 'ICMS Event Logic'
+type: module
+description: 'Provides deployment hooks and update functions for the ICMS Event bundle.'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - icms_admin:icms_admin
+  - webform_views:webform_views
