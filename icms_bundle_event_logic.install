@@ -17,6 +17,9 @@ use Symfony\Component\Yaml\Yaml;
 function icms_bundle_event_logic_install() {
   module_set_weight('icms_bundle_event_logic', 50);
 
+  // Import default bundle texts on module installation.
+  icms_bundle_event_logic_import_default_texts();
+
   // Grant "view event registrations" permission to relevant roles.
   $roles_to_update = ['content_editor', 'administrator_client'];
   foreach ($roles_to_update as $role_id) {
@@ -38,6 +41,48 @@ function icms_bundle_event_logic_install() {
   // overwritten by config import. The icms_admin.webform_install_subscriber
   // event subscriber will reinstall webforms after config import completes.
   icms_admin_install_webform('webform.webform.icms_event_registration', 'icms_bundle_event_logic');
+}
+
+/**
+ * Imports default text entities from the package-local texts file.
+ */
+function icms_bundle_event_logic_import_default_texts(): void {
+  $module_name = 'icms_bundle_event_logic';
+  $module_handler = \Drupal::moduleHandler();
+
+  if (!$module_handler->moduleExists('texts') || !$module_handler->moduleExists('texts_sync')) {
+    \Drupal::logger($module_name)->notice('Skipped texts import during install because texts/texts_sync is not enabled.');
+    return;
+  }
+
+  $module_path = \Drupal::service('extension.list.module')->getPath($module_name);
+  $texts_file = DRUPAL_ROOT . '/' . $module_path . '/texts/texts.yml';
+
+  if (!is_readable($texts_file)) {
+    \Drupal::logger($module_name)->notice('Skipped texts import during install because no readable texts file was found at @path.', ['@path' => $texts_file]);
+    return;
+  }
+
+  try {
+    $data = Yaml::parseFile($texts_file);
+    if (!is_array($data) || empty($data)) {
+      \Drupal::logger($module_name)->warning('Skipped texts import during install because YAML was empty or invalid: @path', ['@path' => $texts_file]);
+      return;
+    }
+
+    /** @var \Drupal\texts_sync\TextsSyncService $texts_sync */
+    $texts_sync = \Drupal::service('texts_sync.service');
+    $stats = $texts_sync->import($data, NULL, TRUE);
+
+    \Drupal::logger($module_name)->notice('Imported default texts during install. Created: @created, Updated: @updated, Skipped: @skipped.', [
+      '@created' => (int) ($stats['created'] ?? 0),
+      '@updated' => (int) ($stats['updated'] ?? 0),
+      '@skipped' => (int) ($stats['skipped'] ?? 0),
+    ]);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger($module_name)->error('Failed to import default texts during install: @message', ['@message' => $e->getMessage()]);
+  }
 }
 
 /**

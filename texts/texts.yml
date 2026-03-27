@@ -1,0 +1,56 @@
+all_day:
+  context: event
+  default:
+    en: 'All day'
+    de: 'Ganztägig'
+    fr: 'Toute la journée'
+    it: 'Tutto il giorno'
+past_dates:
+  context: event
+  default:
+    en: 'Past Dates'
+    de: 'Vergangene Termine'
+    fr: 'Dates passées'
+    it: 'Date passate'
+select_date:
+  context: event
+  default:
+    en: 'Select a date'
+    de: 'Datum auswählen'
+    fr: 'Sélectionnez une date'
+    it: 'Seleziona una data'
+show_less:
+  context: event
+  default:
+    en: 'Show less'
+    de: 'Weniger anzeigen'
+    fr: 'Afficher moins'
+    it: 'Mostra meno'
+show_more:
+  context: event
+  default:
+    en: 'Show more'
+    de: 'Mehr anzeigen'
+    fr: 'Afficher plus'
+    it: 'Mostra di più'
+upcoming_dates:
+  context: event
+  default:
+    en: 'Upcoming Dates'
+    de: 'Kommende Termine'
+    fr: 'Dates à venir'
+    it: 'Date in arrivo'
+view_on_map:
+  context: event
+  default:
+    en: 'View on map'
+    de: 'Auf der Karte anzeigen'
+    fr: 'Voir sur la carte'
+    it: 'Visualizza sulla mappa'
+webform_title:
+  context: event
+  default:
+    en: 'Register for the event'
+    de: 'Für die Veranstaltung anmelden'
+    fr: 'S’inscrire à l’événement'
+    it: 'Registrati all''evento'
