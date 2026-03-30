@@ -12,6 +12,13 @@ past_dates:
     de: 'Vergangene Termine'
     fr: 'Dates passées'
     it: 'Date passate'
+register:
+  context: event
+  default:
+    en: 'Register'
+    de: 'Anmelden'
+    fr: 'S’inscrire'
+    it: 'Registrati'
 select_date:
   context: event
   default:
