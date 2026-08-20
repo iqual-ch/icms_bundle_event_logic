@@ -65,6 +65,7 @@ class EventRegistrationManagerTest extends ExistingSiteBase {
     $this->assertSame($event->id(), $source->id());
 
     // This is the count Webform's per-event results page is built on.
+    /** @var \Drupal\webform\WebformSubmissionStorageInterface $storage */
     $storage = \Drupal::entityTypeManager()->getStorage('webform_submission');
     $webform = Webform::load('icms_event_registration');
     $this->assertSame(1, $storage->getTotal($webform, $event));
@@ -127,6 +128,11 @@ class EventRegistrationManagerTest extends ExistingSiteBase {
     foreach (['sticky', 'locked', 'notes', 'langcode', 'remote_addr'] as $hidden) {
       $this->assertNotContains($hidden, $columns);
     }
+
+    // Webform only offers "Submitted to" to a user who may view any submission,
+    // so it is stored unconditionally to keep the list independent of whoever
+    // saved the form. Webform drops it again on a per-event listing.
+    $this->assertContains('entity', $columns);
 
     // Webform's per-event results pages check the form's own access rules, not
     // the "view event registrations" permission.

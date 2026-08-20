@@ -239,7 +239,43 @@ class EventRegistrationManager {
     $columns = array_keys($storage->getDefaultColumns($webform, NULL, NULL, TRUE));
     $hidden = array_merge(self::HIDDEN_COLUMNS, $this->routingElementColumns());
 
-    return array_values(array_diff($columns, $hidden));
+    return $this->withSourceEntityColumn(array_values(array_diff($columns, $hidden)));
+  }
+
+  /**
+   * Adds the "Submitted to" column, whoever happens to be saving the form.
+   *
+   * Webform only offers that column to a user who may view any submission, so
+   * the computed list would otherwise depend on who saved the form — an admin
+   * editing it in the UI would get a different table than a deployment does.
+   *
+   * Storing it unconditionally is safe: Webform intersects a custom column list
+   * with the columns available in the current context, so it is dropped again on
+   * a per-event listing, where every row is the same event anyway. It survives
+   * on the form's own results page, which is the one place the event a
+   * registration belongs to is worth showing.
+   *
+   * @param string[] $columns
+   *   The computed column names.
+   *
+   * @return string[]
+   *   The column names including 'entity', in Webform's own ordering.
+   */
+  protected function withSourceEntityColumn(array $columns): array {
+    if (in_array('entity', $columns, TRUE)) {
+      return $columns;
+    }
+
+    // Webform lists the source entity directly before the submitting user.
+    $position = array_search('uid', $columns, TRUE);
+    if ($position === FALSE) {
+      $columns[] = 'entity';
+      return $columns;
+    }
+
+    array_splice($columns, (int) $position, 0, ['entity']);
+
+    return $columns;
   }
 
   /**
