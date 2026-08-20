@@ -5,109 +5,68 @@
  * Contains hooks for icms_bundle_event_logic module.
  */
 
-use Drupal\node\NodeInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\search_api\Query\ResultSetInterface;
+use Drupal\webform\WebformInterface;
+use Drupal\webform\WebformSubmissionInterface;
 
 /**
- * Implements hook_views_data_alter().
+ * Implements hook_ENTITY_TYPE_presave() for webform_submission entities.
  *
- * Exposes the raw webform_id column of {webform_submission} as a plain string
- * filter, so a view can restrict itself to one webform without depending on
- * that webform's configuration.
- *
- * Views' default handler for the bundle key is the "bundle" filter, which
- * records every selected bundle as a *config dependency* of the view. ICMS
- * webforms are installed by their logic module and `webform.webform.*` is
- * listed in config_ignore, so they never reach the config sync directory. A
- * view carrying that dependency therefore fails config import on any
- * environment where the webform is not in active config yet — the module is
- * installed by the very import that validates the view (ICMS-640).
- *
- * The raw filter produces the identical WHERE clause without the dependency.
+ * @see \Drupal\icms_bundle_event_logic\EventRegistrationManager::attachSourceEntity()
  */
-function icms_bundle_event_logic_views_data_alter(array &$data) {
-  if (!isset($data['webform_submission']['webform_id'])) {
-    return;
-  }
-
-  $data['webform_submission']['icms_webform_id'] = [
-    'title' => t('Webform ID (raw)'),
-    'help' => t('Filters submissions by webform ID without adding a configuration dependency on the webform.'),
-    'filter' => [
-      'id' => 'string',
-      'real field' => 'webform_id',
-      'allow empty' => FALSE,
-    ],
-  ];
+function icms_bundle_event_logic_webform_submission_presave(WebformSubmissionInterface $submission): void {
+  \Drupal::service('icms_bundle_event_logic.registration_manager')
+    ->attachSourceEntity($submission);
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_ENTITY_TYPE_presave() for webform entities.
  *
- * Dynamically populates the occurrence_id exposed filter on the
- * event_registrations view with options derived from the node's
- * event occurrence paragraphs, displaying formatted dates as labels.
+ * The access rules are granted on creation only. Re-granting them on every save
+ * would need a second save from inside the insert hook, and would overrule an
+ * administrator who removed a role on purpose.
  */
-function icms_bundle_event_logic_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
-  if ($form_id !== 'views_exposed_form') {
+function icms_bundle_event_logic_webform_presave(EntityInterface $webform): void {
+  if (!$webform instanceof WebformInterface || !$webform->isNew()) {
     return;
   }
 
-  $storage = $form_state->getStorage();
-  $view = $storage['view'] ?? NULL;
-  if (!$view || $view->id() !== 'event_registrations') {
+  \Drupal::service('icms_bundle_event_logic.registration_manager')
+    ->grantResultsAccess($webform);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for webform entities.
+ *
+ * A duplicated registration form inherits none of the results table settings,
+ * which live in state rather than config, so it is set up here.
+ */
+function icms_bundle_event_logic_webform_insert(EntityInterface $webform): void {
+  if (!$webform instanceof WebformInterface) {
     return;
   }
 
-  // Get the node ID from the view's arguments.
-  $args = $view->args;
-  $node_id = $args[0] ?? NULL;
-  if (!$node_id) {
+  \Drupal::service('icms_bundle_event_logic.registration_manager')
+    ->syncResultsTable($webform);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for webform entities.
+ *
+ * Recomputing the column list on every save is what lets an element added to
+ * the form later show up in the results table on its own.
+ */
+function icms_bundle_event_logic_webform_update(EntityInterface $webform): void {
+  if (!$webform instanceof WebformInterface) {
     return;
   }
 
-  // Load the node and its occurrence paragraphs.
-  $node = \Drupal::entityTypeManager()->getStorage('node')->load($node_id);
-  if (!$node instanceof NodeInterface || !$node->hasField('field_icms_event_occurrence')) {
-    return;
-  }
-
-  $occurrences = $node->get('field_icms_event_occurrence')->referencedEntities();
-  if (empty($occurrences)) {
-    return;
-  }
-
-  // Build select options with formatted date labels.
-  $options = ['' => t('- All -')];
-  foreach ($occurrences as $paragraph) {
-    $paragraph_id = $paragraph->id();
-    $label = $paragraph_id;
-
-    // Format the smart_date field value as a readable date.
-    if ($paragraph->hasField('field_icms_date') && !$paragraph->get('field_icms_date')->isEmpty()) {
-      $date_value = $paragraph->get('field_icms_date')->first();
-      $start = $date_value->get('value')->getValue();
-      if ($start) {
-        $label = date('d.m.Y - H:i', (int) $start);
-      }
-    }
-
-    $options[$paragraph_id] = $label;
-  }
-
-  // The exposed filter uses identifier 'occurrence_id' (non-grouped).
-  if (!isset($form['occurrence_id'])) {
-    return;
-  }
-
-  // Replace the filter element with a select.
-  $default_value = $form['occurrence_id']['#default_value'] ?? '';
-  $form['occurrence_id'] = [
-    '#type' => 'select',
-    '#title' => t('Event date'),
-    '#options' => $options,
-    '#default_value' => $default_value,
-  ];
+  // Only the results table is touched here. The access rules are left alone:
+  // re-granting them would need another save, and an administrator who removed
+  // a role deliberately should keep that.
+  \Drupal::service('icms_bundle_event_logic.registration_manager')
+    ->syncResultsTable($webform);
 }
 
 /**

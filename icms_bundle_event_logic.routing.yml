@@ -1,8 +1,27 @@
+# These paths were served by the retired event_registrations view. Webform's
+# own results pages replace them; the URLs stay so existing links, bookmarks
+# and the "view event registrations" permission keep working.
+# @see \Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController
 icms_bundle_event_logic.registrations:
   path: '/node/{node}/registrations'
   defaults:
-    _controller: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::view'
+    _controller: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::submissions'
     _title: 'Registrations'
+  requirements:
+    _permission: 'view event registrations'
+    _custom_access: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::access'
+    node: \d+
+  options:
+    _admin_route: TRUE
+    parameters:
+      node:
+        type: entity:node
+
+icms_bundle_event_logic.registrations_export:
+  path: '/node/{node}/registrations/export'
+  defaults:
+    _controller: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::export'
+    _title: 'Registrations export'
   requirements:
     _permission: 'view event registrations'
     _custom_access: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::access'

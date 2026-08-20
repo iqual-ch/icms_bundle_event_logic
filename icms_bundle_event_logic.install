@@ -274,3 +274,167 @@ function icms_bundle_event_logic_update_9003() {
     '@id' => $webform_id,
   ]);
 }
+
+/**
+ * Install webform_node, which now serves the registrations listing.
+ */
+function icms_bundle_event_logic_update_9004() {
+  if (\Drupal::moduleHandler()->moduleExists('webform_node')) {
+    return new TranslatableMarkup('webform_node is already installed.');
+  }
+
+  \Drupal::service('module_installer')->install(['webform_node']);
+
+  return new TranslatableMarkup('Installed webform_node.');
+}
+
+/**
+ * Retire the event_registrations view and the webform_views dependency.
+ *
+ * The view listed registrations with one Views field per element of the shipped
+ * registration form, which froze it to that one form. Webform's own results
+ * pages build their table from the form's elements at request time.
+ */
+function icms_bundle_event_logic_update_9005() {
+  $messages = [];
+
+  $config = \Drupal::configFactory()->getEditable('views.view.event_registrations');
+  if (!$config->isNew()) {
+    $config->delete();
+    $messages[] = 'Deleted the event_registrations view.';
+  }
+
+  if (!\Drupal::moduleHandler()->moduleExists('webform_views')) {
+    $messages[] = 'webform_views is not installed.';
+    return implode(' ', $messages);
+  }
+
+  // Uninstalling a module deletes the config that depends on it, so a client
+  // who built their own webform views keeps the module instead.
+  $dependents = \Drupal::service('config.manager')
+    ->findConfigEntityDependencies('module', ['webform_views']);
+
+  if ($dependents) {
+    $messages[] = sprintf(
+      'Kept webform_views: %d config object(s) still depend on it (%s).',
+      count($dependents),
+      implode(', ', array_keys($dependents))
+    );
+  }
+  else {
+    \Drupal::service('module_installer')->uninstall(['webform_views']);
+    $messages[] = 'Uninstalled webform_views.';
+  }
+
+  return implode(' ', $messages);
+}
+
+/**
+ * Point existing registrations at their event node.
+ *
+ * Submissions made before the presave hook landed are stored against the
+ * GraphQL server, so Drupal reports no registrations per event. Their event is
+ * recoverable from the hidden node_id element.
+ *
+ * @see \Drupal\icms_bundle_event_logic\EventRegistrationManager::attachSourceEntity()
+ */
+function icms_bundle_event_logic_update_9006(array &$sandbox) {
+  $storage = \Drupal::entityTypeManager()->getStorage('webform_submission');
+  /** @var \Drupal\icms_bundle_event_logic\EventRegistrationManager $manager */
+  $manager = \Drupal::service('icms_bundle_event_logic.registration_manager');
+
+  if (!isset($sandbox['ids'])) {
+    // Only submissions that are not already attached to a node need looking at.
+    $sandbox['ids'] = array_values($storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('entity_type', 'node', '<>')
+      ->execute());
+    $sandbox['total'] = count($sandbox['ids']);
+    $sandbox['updated'] = 0;
+  }
+
+  foreach (array_splice($sandbox['ids'], 0, 50) as $id) {
+    $submission = $storage->load($id);
+    if ($submission === NULL) {
+      continue;
+    }
+
+    if ($manager->attachSourceEntity($submission)) {
+      // resave() keeps the submission's own timestamps and serial intact.
+      $submission->resave();
+      $sandbox['updated']++;
+    }
+  }
+
+  $sandbox['#finished'] = $sandbox['ids'] ? 0 : 1;
+
+  if ($sandbox['ids']) {
+    return new TranslatableMarkup('@count submissions left to check.', [
+      '@count' => count($sandbox['ids']),
+    ]);
+  }
+
+  return new TranslatableMarkup('Checked @total submissions, attached @updated to their event.', [
+    '@total' => $sandbox['total'],
+    '@updated' => $sandbox['updated'],
+  ]);
+}
+
+/**
+ * Let the event editing roles read registrations through Webform.
+ *
+ * Registrations used to be reachable only through the event_registrations view,
+ * which is guarded by "view event registrations". Webform's own results pages
+ * check the webform's access rules instead, and the event editing roles hold
+ * none of the global webform permissions.
+ *
+ * @see \Drupal\icms_bundle_event_logic\EventRegistrationManager::grantResultsAccess()
+ */
+function icms_bundle_event_logic_update_9007() {
+  /** @var \Drupal\icms_bundle_event_logic\EventRegistrationManager $manager */
+  $manager = \Drupal::service('icms_bundle_event_logic.registration_manager');
+
+  $updated = [];
+  foreach (\Drupal::entityTypeManager()->getStorage('webform')->loadMultiple() as $webform) {
+    if ($manager->grantResultsAccess($webform)) {
+      $webform->save();
+      $updated[] = $webform->id();
+    }
+  }
+
+  if (!$updated) {
+    return new TranslatableMarkup('No registration forms needed an access rule change.');
+  }
+
+  return new TranslatableMarkup('Granted view_any on: @forms.', [
+    '@forms' => implode(', ', $updated),
+  ]);
+}
+
+/**
+ * Apply the registration results table to the forms that already exist.
+ *
+ * New and duplicated forms get it from hook_webform_insert(); this covers the
+ * ones created before that hook landed.
+ *
+ * @see \Drupal\icms_bundle_event_logic\EventRegistrationManager::syncResultsTable()
+ */
+function icms_bundle_event_logic_update_9008() {
+  /** @var \Drupal\icms_bundle_event_logic\EventRegistrationManager $manager */
+  $manager = \Drupal::service('icms_bundle_event_logic.registration_manager');
+
+  $applied = [];
+  foreach (\Drupal::entityTypeManager()->getStorage('webform')->loadMultiple() as $webform) {
+    if ($manager->syncResultsTable($webform)) {
+      $applied[] = $webform->id();
+    }
+  }
+
+  if (!$applied) {
+    return new TranslatableMarkup('No registration forms needed a results table.');
+  }
+
+  return new TranslatableMarkup('Results table applied to: @forms.', [
+    '@forms' => implode(', ', $applied),
+  ]);
+}

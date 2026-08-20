@@ -1,0 +1,11 @@
+services:
+  icms_bundle_event_logic.registration_manager:
+    class: Drupal\icms_bundle_event_logic\EventRegistrationManager
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.channel.icms_bundle_event_logic'
+
+  logger.channel.icms_bundle_event_logic:
+    parent: logger.channel_base
+    arguments:
+      - 'icms_bundle_event_logic'

@@ -1,8 +1,0 @@
-/**
- * Styles for event registrations admin panel (Views-based).
- */
-
-/* Hide the occurrence_id and node_id entity_autocomplete fields in webforms. */
-.webform-type--entity-autocomplete {
-  display: none !important;
-}
