@@ -1,0 +1,45 @@
+# Interface translations for this module's own admin strings.
+#
+# The ICMS packages are not on localize.drupal.org, so their strings never get
+# a downloaded .po and would sit in English on a German, French or Italian site.
+# They are shipped here instead, and imported by the shared helper in
+# icms_admin, flagged customized so `drush locale:update` leaves them alone.
+#
+# Only strings this module introduces belong here. Anything Drupal core or a
+# contrib module already translates ("Date", "Search", "Filter", "View",
+# "Delete", "Submitted", …) is reused as-is rather than restated.
+#
+# Keyed by source string, then by langcode; languages that are not installed
+# are skipped. Placeholders have to survive the translation — "@count" below
+# is substituted, not displayed.
+
+'Registrations (@count)':
+  de: 'Anmeldungen (@count)'
+  fr: 'Inscriptions (@count)'
+  it: 'Iscrizioni (@count)'
+
+'No registrations for this date.':
+  de: 'Keine Anmeldungen für dieses Datum.'
+  fr: 'Aucune inscription pour cette date.'
+  it: 'Nessuna iscrizione per questa data.'
+
+'Download CSV':
+  de: 'CSV herunterladen'
+  fr: 'Télécharger le CSV'
+  it: 'Scarica il CSV'
+
+# The filter option for registrations whose date has since been deleted.
+'Without a valid date':
+  de: 'Ohne gültiges Datum'
+  fr: 'Sans date valide'
+  it: 'Senza data valida'
+
+'Matches any answer in the table.':
+  de: 'Durchsucht alle Antworten in der Tabelle.'
+  fr: 'Recherche dans toutes les réponses du tableau.'
+  it: 'Cerca in tutte le risposte della tabella.'
+
+'This event has no registration form.':
+  de: 'Diese Veranstaltung hat kein Anmeldeformular.'
+  fr: "Cet événement n'a pas de formulaire d'inscription."
+  it: 'Questo evento non ha un modulo di iscrizione.'

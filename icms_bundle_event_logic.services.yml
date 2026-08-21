@@ -9,3 +9,15 @@ services:
     parent: logger.channel_base
     arguments:
       - 'icms_bundle_event_logic'
+
+  icms_bundle_event_logic.event_registrations:
+    class: Drupal\icms_bundle_event_logic\EventRegistrations
+    arguments:
+      - '@entity_type.manager'
+      - '@date.formatter'
+      - '@datetime.time'
+
+  icms_bundle_event_logic.route_subscriber:
+    class: Drupal\icms_bundle_event_logic\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

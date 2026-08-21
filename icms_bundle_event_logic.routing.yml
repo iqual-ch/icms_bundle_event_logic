@@ -31,3 +31,22 @@ icms_bundle_event_logic.registrations_export:
     parameters:
       node:
         type: entity:node
+
+# The CSV of whatever the results screen is currently showing. Same path the
+# berna1881v2 project already uses, so its own route becomes redundant.
+# @see \Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::csv
+icms_bundle_event_logic.event_registrations_csv:
+  path: '/node/{node}/webform/results/csv'
+  defaults:
+    _controller: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::csv'
+    _title: 'Registrations CSV'
+  requirements:
+    _custom_access: '\Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController::access'
+    _entity_access: 'node.view'
+    _permission: 'view event registrations+view any webform submission+administer webform'
+    node: \d+
+  options:
+    _admin_route: TRUE
+    parameters:
+      node:
+        type: entity:node

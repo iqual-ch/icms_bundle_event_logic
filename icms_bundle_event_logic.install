@@ -36,6 +36,11 @@ function icms_bundle_event_logic_install() {
     }
   }
 
+  // The module's own admin strings; the ICMS packages get no .po from
+  // localize.drupal.org.
+  \Drupal::moduleHandler()->loadInclude('icms_admin', 'install');
+  icms_admin_import_interface_translations('icms_bundle_event_logic');
+
   // Attempt to install webform during module installation.
   // Note: During site installation with --existing-config, this may be
   // overwritten by config import. The icms_admin.webform_install_subscriber
@@ -436,5 +441,23 @@ function icms_bundle_event_logic_update_9008() {
 
   return new TranslatableMarkup('Results table applied to: @forms.', [
     '@forms' => implode(', ', $applied),
+  ]);
+}
+
+/**
+ * Import the German, French and Italian strings for the registrations screen.
+ *
+ * @see icms_admin_import_interface_translations()
+ */
+function icms_bundle_event_logic_update_9009() {
+  \Drupal::moduleHandler()->loadInclude('icms_admin', 'install');
+  $summary = icms_admin_import_interface_translations('icms_bundle_event_logic');
+
+  if (!$summary) {
+    return new TranslatableMarkup('No interface translations needed importing.');
+  }
+
+  return new TranslatableMarkup('Imported interface translations (@summary).', [
+    '@summary' => implode(', ', $summary),
   ]);
 }
