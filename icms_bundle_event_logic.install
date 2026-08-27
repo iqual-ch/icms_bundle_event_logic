@@ -268,6 +268,53 @@ function icms_bundle_event_logic_update_9005() {
 }
 
 /**
+ * Re-import the bundle texts: adds the event calendar strings.
+ */
+function icms_bundle_event_logic_update_9006() {
+  icms_bundle_event_logic_import_default_texts();
+  return 'Re-imported the event bundle texts.';
+}
+
+/**
+ * Events listing: stop partitioning the index by language.
+ *
+ * Occurrence paragraphs are not translatable, so each occurrence exists in
+ * exactly one language — but the GraphQL search filtered items by the request
+ * language whenever the index carried a language field. An event created in
+ * German therefore never appeared on the French site. Removing the langcode
+ * field makes every occurrence visible in every language; parent nodes still
+ * resolve in the request language.
+ */
+function icms_bundle_event_logic_update_9007() {
+  /** @var \Drupal\search_api\IndexInterface|null $index */
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
+  if (!$index) {
+    return 'No events_listing index on this site.';
+  }
+
+  if ($index->getField('langcode')) {
+    $index->removeField('langcode');
+  }
+
+  // Drop the field from the processors that reference it.
+  foreach (['tokenizer', 'ignorecase'] as $processor_id) {
+    $settings = $index->getProcessors()[$processor_id] ?? NULL;
+    if ($settings) {
+      $configuration = $settings->getConfiguration();
+      if (!empty($configuration['fields'])) {
+        $configuration['fields'] = array_values(array_diff($configuration['fields'], ['langcode']));
+        $settings->setConfiguration($configuration);
+      }
+    }
+  }
+
+  $index->save();
+  $index->reindex();
+
+  return 'Removed the language partition from the events_listing index and queued a reindex.';
+}
+
+/**
  * Helper function to install a webform from a YAML config file.
  *
  * This shared utility can be used by any module that needs to install webforms
