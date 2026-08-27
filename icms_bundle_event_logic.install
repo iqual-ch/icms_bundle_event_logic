@@ -236,6 +236,38 @@ function icms_bundle_event_logic_update_9004() {
 }
 
 /**
+ * Add the event calendar settings and their GraphQL exposure.
+ */
+function icms_bundle_event_logic_update_9005() {
+  $messages = [];
+
+  // Import the default calendar settings shipped in config/install.
+  $config = \Drupal::configFactory()->getEditable('icms_bundle_event_logic.calendar_settings');
+  if ($config->isNew()) {
+    $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
+    $file = DRUPAL_ROOT . '/' . $module_path . '/config/install/icms_bundle_event_logic.calendar_settings.yml';
+    if (is_readable($file)) {
+      $config->setData(Yaml::parseFile($file))->save(TRUE);
+      $messages[] = 'Imported the default calendar settings.';
+    }
+  }
+  else {
+    $messages[] = 'Calendar settings already present.';
+  }
+
+  // Enable the icms_event_calendar schema extension, as the recipe does for
+  // new installs.
+  $server = \Drupal::configFactory()->getEditable('graphql.graphql_servers.graphql');
+  if ($server->get('schema') !== NULL && !$server->get('schema_configuration.core_composable.extensions.icms_event_calendar')) {
+    $server->set('schema_configuration.core_composable.extensions.icms_event_calendar', 'icms_event_calendar');
+    $server->save(TRUE);
+    $messages[] = 'Enabled the icms_event_calendar GraphQL schema extension.';
+  }
+
+  return implode(' ', $messages);
+}
+
+/**
  * Helper function to install a webform from a YAML config file.
  *
  * This shared utility can be used by any module that needs to install webforms

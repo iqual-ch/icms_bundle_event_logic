@@ -1,0 +1,16 @@
+icms_bundle_event_logic.calendar_settings:
+  type: config_object
+  label: 'ICMS event calendar settings'
+  mapping:
+    week_start:
+      type: integer
+      label: 'First day of the week (1 = Monday, 7 = Sunday)'
+    show_topic_filter:
+      type: boolean
+      label: 'Show the topic legend with interactive filtering'
+    max_events_per_day:
+      type: integer
+      label: 'Event chips per day before the more indicator'
+    show_event_time:
+      type: boolean
+      label: 'Show the start time on event chips'

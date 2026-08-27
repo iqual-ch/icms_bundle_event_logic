@@ -1,0 +1,10 @@
+# Per-project tuning of the event calendar display. Deliberately without an
+# admin UI: change per project with `drush config:set` or a settings override.
+# First day of the week: 1 = Monday ... 7 = Sunday.
+week_start: 1
+# Show the topic legend with interactive filtering below the calendar.
+show_topic_filter: true
+# Event chips shown per day before the "+ n" more indicator.
+max_events_per_day: 3
+# Show the start time on event chips.
+show_event_time: true

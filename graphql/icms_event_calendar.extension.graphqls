@@ -1,0 +1,21 @@
+extend type Query {
+  """
+  Per-project settings for the event calendar display, maintained in the
+  icms_bundle_event_logic.calendar_settings config object.
+  """
+  eventCalendarSettings: EventCalendarSettings!
+}
+
+type EventCalendarSettings {
+  """First day of the week: 1 = Monday ... 7 = Sunday."""
+  weekStart: Int!
+
+  """Show the topic legend with interactive filtering."""
+  showTopicFilter: Boolean!
+
+  """Event chips shown per day before the more indicator."""
+  maxEventsPerDay: Int!
+
+  """Show the start time on event chips."""
+  showEventTime: Boolean!
+}
