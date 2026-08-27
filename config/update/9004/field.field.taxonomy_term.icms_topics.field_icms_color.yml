@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_icms_color
+    - taxonomy.vocabulary.icms_topics
+  module:
+    - options
+id: taxonomy_term.icms_topics.field_icms_color
+field_name: field_icms_color
+entity_type: taxonomy_term
+bundle: icms_topics
+label: Color
+description: 'Color used to represent this topic, for example in the event calendar. Topics without a color are assigned one automatically.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_string

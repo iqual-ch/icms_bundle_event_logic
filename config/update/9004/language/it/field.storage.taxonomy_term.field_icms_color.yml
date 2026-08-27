@@ -1,0 +1,18 @@
+settings:
+  allowed_values:
+    -
+      label: Rosso
+    -
+      label: Arancione
+    -
+      label: Giallo
+    -
+      label: Verde
+    -
+      label: Turchese
+    -
+      label: Blu
+    -
+      label: Viola
+    -
+      label: Rosa

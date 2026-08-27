@@ -1,0 +1,18 @@
+settings:
+  allowed_values:
+    -
+      label: Rot
+    -
+      label: Orange
+    -
+      label: Gelb
+    -
+      label: Grün
+    -
+      label: Türkis
+    -
+      label: Blau
+    -
+      label: Violett
+    -
+      label: Rosa
