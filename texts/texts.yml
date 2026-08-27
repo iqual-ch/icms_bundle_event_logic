@@ -61,3 +61,52 @@ webform_title:
     de: 'Für die Veranstaltung anmelden'
     fr: "S'inscrire à l'événement"
     it: "Registrati all'evento"
+calendar_today:
+  context: event
+  default:
+    en: 'Today'
+    de: 'Heute'
+    fr: "Aujourd'hui"
+    it: 'Oggi'
+calendar_previous_month:
+  context: event
+  default:
+    en: 'Previous month'
+    de: 'Vorheriger Monat'
+    fr: 'Mois précédent'
+    it: 'Mese precedente'
+calendar_next_month:
+  context: event
+  default:
+    en: 'Next month'
+    de: 'Nächster Monat'
+    fr: 'Mois suivant'
+    it: 'Mese successivo'
+calendar_more:
+  context: event
+  default:
+    en: '+ @count more'
+    de: '+ @count weitere'
+    fr: '+ @count autres'
+    it: '+ @count altri'
+calendar_show_less:
+  context: event
+  default:
+    en: 'Show less'
+    de: 'Weniger anzeigen'
+    fr: 'Afficher moins'
+    it: 'Mostra meno'
+calendar_no_events:
+  context: event
+  default:
+    en: 'No events this month.'
+    de: 'Keine Veranstaltungen in diesem Monat.'
+    fr: 'Aucun événement ce mois-ci.'
+    it: 'Nessun evento questo mese.'
+calendar_filter_topics:
+  context: event
+  default:
+    en: 'Filter by topic'
+    de: 'Nach Thema filtern'
+    fr: 'Filtrer par thème'
+    it: 'Filtra per tema'
