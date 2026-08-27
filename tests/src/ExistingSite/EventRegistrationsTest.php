@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\icms_bundle_event_logic\ExistingSite;
 
+use Drupal\icms_bundle_event_logic\Controller\EventRegistrationsController;
 use Drupal\icms_bundle_event_logic\EventRegistrations;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\webform\Entity\WebformSubmission;
@@ -190,6 +191,34 @@ class EventRegistrationsTest extends ExistingSiteBase {
     $this->assertSame(['Erik Clone'], $this->names(
       $this->registrations->latestPerPerson($this->event, $this->occurrenceIds[0])
     ));
+  }
+
+  /**
+   * A node without event dates keeps Webform's own results table.
+   *
+   * The screen takes over Webform's route for every node, so anything that is
+   * not an event — a content type a project gives a webform field to — has to
+   * fall through rather than be shown a date filter that means nothing to it.
+   */
+  public function testNodeWithoutOccurrencesFallsBackToWebform(): void {
+    $page = $this->createNode(['type' => 'icms_page', 'title' => 'Not an event']);
+    $this->assertFalse(
+      $page->hasField('field_icms_event_occurrence'),
+      'The fallback is only meaningful for a node without event dates.'
+    );
+
+    $controller = EventRegistrationsController::create(\Drupal::getContainer());
+    $build = $controller->results($page);
+
+    // Webform's list builder renders a table of its own, so the presence of a
+    // table proves nothing; the event screen's own parts have to be absent.
+    $this->assertArrayNotHasKey('filter', $build, 'No event date filter is offered.');
+    $this->assertArrayNotHasKey('download', $build, 'No event CSV link is offered.');
+    $this->assertArrayNotHasKey(
+      '#caption',
+      $build['table'] ?? [],
+      'The table is Webform\'s, not the per-date one this module captions.'
+    );
   }
 
   /**
