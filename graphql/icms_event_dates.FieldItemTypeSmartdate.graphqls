@@ -1,0 +1,7 @@
+extend type FieldItemTypeSmartdate {
+  """
+  The end value of the smart date range, formatted like `formatted` formats
+  the start value.
+  """
+  endFormatted(format: String, drupalDateFormat: DrupalDateFormat): String
+}

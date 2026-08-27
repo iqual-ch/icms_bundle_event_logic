@@ -1,0 +1,7 @@
+langcode: en
+status: true
+dependencies: {  }
+id: icms_event_time
+label: 'ICMS Event time'
+locked: false
+pattern: 'H:i'

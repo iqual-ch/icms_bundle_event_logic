@@ -464,3 +464,66 @@ function icms_bundle_event_logic_update_9009() {
     '@summary' => implode(', ', $summary),
   ]);
 }
+
+/**
+ * Add the ICMS event date formats and the smart date GraphQL extension.
+ */
+function icms_bundle_event_logic_update_9010() {
+  $messages = [];
+
+  // Create the dedicated event date formats shipped with the bundle recipe.
+  // The copies in config/update/9002 are identical to the recipe's.
+  $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
+  $storage = \Drupal::entityTypeManager()->getStorage('date_format');
+  foreach (['icms_event_date', 'icms_event_time'] as $format_id) {
+    if ($storage->load($format_id)) {
+      $messages[] = "Date format $format_id already exists.";
+      continue;
+    }
+    $file = DRUPAL_ROOT . '/' . $module_path . '/config/update/9002/core.date_format.' . $format_id . '.yml';
+    if (!is_readable($file)) {
+      \Drupal::logger('icms_bundle_event_logic')->error('Date format config file not found: @file', ['@file' => $file]);
+      continue;
+    }
+    $data = Yaml::parseFile($file);
+    $storage->createFromStorageRecord($data)->save();
+    $messages[] = "Created date format $format_id.";
+  }
+
+  // Apply the config translations the recipe ships for fresh installs.
+  $language_manager = \Drupal::languageManager();
+  $installed = $language_manager->getLanguages();
+  foreach (['de', 'fr', 'it'] as $langcode) {
+    if (!isset($installed[$langcode])) {
+      continue;
+    }
+    foreach (['icms_event_date', 'icms_event_time'] as $format_id) {
+      $file = DRUPAL_ROOT . '/' . $module_path . '/config/update/9002/language/' . $langcode . '/core.date_format.' . $format_id . '.yml';
+      if (!is_readable($file)) {
+        continue;
+      }
+      $override = $language_manager->getLanguageConfigOverride($langcode, 'core.date_format.' . $format_id);
+      if ($override->isNew()) {
+        $override->setData(Yaml::parseFile($file));
+        $override->save();
+      }
+    }
+  }
+
+  // Enable the icms_event_dates schema extension (formatted smart date end
+  // values) on the GraphQL server, as the recipe does for new installs.
+  $config = \Drupal::configFactory()->getEditable('graphql.graphql_servers.graphql');
+  if ($config->get('schema') !== NULL) {
+    $extensions = $config->get('schema_configuration.core_composable.extensions') ?: [];
+    if (!isset($extensions['icms_event_dates'])) {
+      $config->set('schema_configuration.core_composable.extensions.icms_event_dates', 'icms_event_dates');
+      $config->save(TRUE);
+      $messages[] = 'Enabled the icms_event_dates GraphQL schema extension.';
+    }
+    else {
+      $messages[] = 'The icms_event_dates GraphQL schema extension was already enabled.';
+    }
+  }
+
+  return implode(' ', $messages);
+}
