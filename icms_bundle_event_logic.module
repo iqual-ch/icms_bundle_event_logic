@@ -6,9 +6,37 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\node\NodeInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\webform\WebformInterface;
 use Drupal\webform\WebformSubmissionInterface;
+
+/**
+ * Implements hook_icms_listing_type_options_alter().
+ *
+ * Adds the calendar display to the event listing paragraph. The option is
+ * only offered on icms_layout_event — other bundles' listing paragraphs keep
+ * the base options.
+ *
+ * @see \icms_core_logic_listing_type_allowed_values()
+ */
+function icms_bundle_event_logic_icms_listing_type_options_alter(array &$options, ?FieldableEntityInterface $entity): void {
+  if ($entity && $entity->getEntityTypeId() === 'paragraph' && $entity->bundle() === 'icms_layout_event') {
+    $options['calendar'] = t('Calendar');
+  }
+}
+
+/**
+ * Returns the interface translations for the event listing type options.
+ */
+function icms_bundle_event_logic_listing_type_translations(): array {
+  return [
+    'de' => ['Calendar' => 'Kalender'],
+    'fr' => ['Calendar' => 'Calendrier'],
+    'it' => ['Calendar' => 'Calendario'],
+  ];
+}
 
 /**
  * Implements hook_ENTITY_TYPE_presave() for webform_submission entities.

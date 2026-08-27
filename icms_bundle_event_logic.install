@@ -46,6 +46,9 @@ function icms_bundle_event_logic_install() {
   // overwritten by config import. The icms_admin.webform_install_subscriber
   // event subscriber will reinstall webforms after config import completes.
   icms_bundle_event_logic_install_webform('webform.webform.icms_event_registration', 'icms_bundle_event_logic');
+
+  // Seed the interface translations for the calendar listing type option.
+  icms_core_logic_seed_interface_translations(icms_bundle_event_logic_listing_type_translations());
 }
 
 /**
@@ -135,6 +138,17 @@ function icms_bundle_event_logic_update_9002() {
   $index->save();
 
   return new TranslatableMarkup('Renamed the events_listing parent_id field to nid.');
+}
+
+/**
+ * Add the calendar listing type: seed its option label translations.
+ *
+ * The option itself is code (hook_icms_listing_type_options_alter()); the
+ * storage switch to the allowed values function is icms_core_logic_update_9047().
+ */
+function icms_bundle_event_logic_update_9003() {
+  icms_core_logic_seed_interface_translations(icms_bundle_event_logic_listing_type_translations());
+  return 'Seeded the Calendar listing type label translations.';
 }
 
 /**
