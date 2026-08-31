@@ -110,3 +110,24 @@ calendar_filter_topics:
     de: 'Nach Thema filtern'
     fr: 'Filtrer par thème'
     it: 'Filtra per tema'
+calendar_view_switch:
+  context: event
+  default:
+    en: 'Calendar view'
+    de: 'Kalenderansicht'
+    fr: 'Vue du calendrier'
+    it: 'Vista del calendario'
+calendar_view_month:
+  context: event
+  default:
+    en: 'Month'
+    de: 'Monat'
+    fr: 'Mois'
+    it: 'Mese'
+calendar_view_agenda:
+  context: event
+  default:
+    en: 'Agenda'
+    de: 'Agenda'
+    fr: 'Agenda'
+    it: 'Agenda'
