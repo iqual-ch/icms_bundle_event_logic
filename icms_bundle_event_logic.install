@@ -47,9 +47,6 @@ function icms_bundle_event_logic_install() {
   // overwritten by config import. The icms_admin.webform_install_subscriber
   // event subscriber will reinstall webforms after config import completes.
   icms_bundle_event_logic_install_webform('webform.webform.icms_event_registration', 'icms_bundle_event_logic');
-
-  // Seed the interface translations for the calendar listing type option.
-  icms_core_logic_seed_interface_translations(icms_bundle_event_logic_listing_type_translations());
 }
 
 /**
@@ -142,28 +139,17 @@ function icms_bundle_event_logic_update_9002() {
 }
 
 /**
- * Add the calendar listing type: seed its option label translations.
- *
- * The option itself is code (hook_icms_listing_type_options_alter()); the
- * storage switch to the allowed values function is icms_core_logic_update_9047().
- */
-function icms_bundle_event_logic_update_9003() {
-  icms_core_logic_seed_interface_translations(icms_bundle_event_logic_listing_type_translations());
-  return 'Seeded the Calendar listing type label translations.';
-}
-
-/**
  * Add the topic color field, used by the calendar listing.
  *
  * Mirrors what the bundle recipe does on fresh installs: field storage and
  * instance on icms_topics terms, the form widget, the GraphQL exposure, and
- * the config translations. The copies in config/update/9004 are identical to
+ * the config translations. The copies in config/update/9003 are identical to
  * the recipe\'s.
  */
-function icms_bundle_event_logic_update_9004() {
+function icms_bundle_event_logic_update_9003() {
   $messages = [];
   $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
-  $dir = DRUPAL_ROOT . '/' . $module_path . '/config/update/9004';
+  $dir = DRUPAL_ROOT . '/' . $module_path . '/config/update/9003';
 
   // Field storage and instance.
   $configs = [
@@ -238,7 +224,7 @@ function icms_bundle_event_logic_update_9004() {
 /**
  * Add the event calendar settings and their GraphQL exposure.
  */
-function icms_bundle_event_logic_update_9005() {
+function icms_bundle_event_logic_update_9004() {
   $messages = [];
 
   // Import the default calendar settings shipped in config/install.
@@ -270,7 +256,7 @@ function icms_bundle_event_logic_update_9005() {
 /**
  * Re-import the bundle texts: adds the event calendar strings.
  */
-function icms_bundle_event_logic_update_9006() {
+function icms_bundle_event_logic_update_9005() {
   icms_bundle_event_logic_import_default_texts();
   return 'Re-imported the event bundle texts.';
 }
@@ -285,7 +271,7 @@ function icms_bundle_event_logic_update_9006() {
  * field makes every occurrence visible in every language; parent nodes still
  * resolve in the request language.
  */
-function icms_bundle_event_logic_update_9007() {
+function icms_bundle_event_logic_update_9006() {
   /** @var \Drupal\search_api\IndexInterface|null $index */
   $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
   if (!$index) {
