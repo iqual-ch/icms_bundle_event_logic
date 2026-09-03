@@ -139,92 +139,9 @@ function icms_bundle_event_logic_update_9002() {
 }
 
 /**
- * Add the topic color field, used by the calendar listing.
- *
- * Mirrors what the bundle recipe does on fresh installs: field storage and
- * instance on icms_topics terms, the form widget, the GraphQL exposure, and
- * the config translations. The copies in config/update/9003 are identical to
- * the recipe\'s.
- */
-function icms_bundle_event_logic_update_9003() {
-  $messages = [];
-  $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
-  $dir = DRUPAL_ROOT . '/' . $module_path . '/config/update/9003';
-
-  // Field storage and instance.
-  $configs = [
-    'field_storage_config' => 'field.storage.taxonomy_term.field_icms_color',
-    'field_config' => 'field.field.taxonomy_term.icms_topics.field_icms_color',
-  ];
-  foreach ($configs as $entity_type_id => $config_name) {
-    $storage = \Drupal::entityTypeManager()->getStorage($entity_type_id);
-    $file = $dir . '/' . $config_name . '.yml';
-    if (!is_readable($file)) {
-      \Drupal::logger('icms_bundle_event_logic')->error('Config file not found: @file', ['@file' => $file]);
-      return 'Aborted: missing config file for the topic color field.';
-    }
-    $data = Yaml::parseFile($file);
-    if ($storage->load($data['id'])) {
-      $messages[] = "$config_name already exists.";
-      continue;
-    }
-    $storage->createFromStorageRecord($data)->save();
-    $messages[] = "Created $config_name.";
-  }
-
-  // Config translations.
-  $language_manager = \Drupal::languageManager();
-  $installed = $language_manager->getLanguages();
-  foreach (['de', 'fr', 'it'] as $langcode) {
-    if (!isset($installed[$langcode])) {
-      continue;
-    }
-    foreach ($configs as $config_name) {
-      $file = $dir . '/language/' . $langcode . '/' . $config_name . '.yml';
-      if (!is_readable($file)) {
-        continue;
-      }
-      $override = $language_manager->getLanguageConfigOverride($langcode, $config_name);
-      if ($override->isNew()) {
-        $override->setData(Yaml::parseFile($file));
-        $override->save();
-      }
-    }
-  }
-
-  // Form widget on the topics term form.
-  $form_display = EntityFormDisplay::load('taxonomy_term.icms_topics.default');
-  if ($form_display && !$form_display->getComponent('field_icms_color')) {
-    $form_display->setComponent('field_icms_color', [
-      'type' => 'options_select',
-      'weight' => 2,
-      'region' => 'content',
-      'settings' => [],
-      'third_party_settings' => [],
-    ]);
-    $form_display->save();
-    $messages[] = 'Added the color widget to the topics form.';
-  }
-
-  // GraphQL exposure.
-  $config = \Drupal::configFactory()->getEditable('graphql.graphql_servers.graphql');
-  if ($config->get('schema') !== NULL && !$config->get('schema_configuration.core_composable.fields.taxonomy_term.field_icms_color')) {
-    $config->set('schema_configuration.core_composable.fields.taxonomy_term.field_icms_color', 'field_icms_color');
-    $config->save(TRUE);
-    $messages[] = 'Exposed field_icms_color over GraphQL.';
-  }
-
-  // The new field must reach the entity system and the GraphQL schema.
-  \Drupal::entityTypeManager()->clearCachedDefinitions();
-  \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
-
-  return implode(' ', $messages);
-}
-
-/**
  * Add the event calendar settings and their GraphQL exposure.
  */
-function icms_bundle_event_logic_update_9004() {
+function icms_bundle_event_logic_update_9003() {
   $messages = [];
 
   // Import the default calendar settings shipped in config/install.
@@ -256,7 +173,7 @@ function icms_bundle_event_logic_update_9004() {
 /**
  * Re-import the bundle texts: adds the event calendar strings.
  */
-function icms_bundle_event_logic_update_9005() {
+function icms_bundle_event_logic_update_9004() {
   icms_bundle_event_logic_import_default_texts();
   return 'Re-imported the event bundle texts.';
 }
@@ -271,7 +188,7 @@ function icms_bundle_event_logic_update_9005() {
  * field makes every occurrence visible in every language; parent nodes still
  * resolve in the request language.
  */
-function icms_bundle_event_logic_update_9006() {
+function icms_bundle_event_logic_update_9005() {
   /** @var \Drupal\search_api\IndexInterface|null $index */
   $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
   if (!$index) {
