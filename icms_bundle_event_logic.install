@@ -221,3 +221,56 @@ function icms_bundle_event_logic_install_webform($config_name, $module_name) {
     return FALSE;
   }
 }
+
+/**
+ * Filter event registrations on the raw webform ID instead of the bundle.
+ */
+function icms_bundle_event_logic_update_9003() {
+  $storage = \Drupal::entityTypeManager()->getStorage('view');
+  $view = $storage->load('event_registrations');
+
+  if (!$view) {
+    return new TranslatableMarkup('The event_registrations view does not exist, nothing to update.');
+  }
+
+  $display = $view->get('display');
+  $filters = $display['default']['display_options']['filters'] ?? [];
+
+  if (!isset($filters['webform_id']) || ($filters['webform_id']['plugin_id'] ?? '') !== 'bundle') {
+    return new TranslatableMarkup('The event_registrations view already filters on the raw webform ID.');
+  }
+
+  // Keep whatever webform the site actually filters on — a client may have
+  // pointed the view at a webform of their own.
+  $webform_ids = array_keys((array) ($filters['webform_id']['value'] ?? []));
+  $webform_id = reset($webform_ids) ?: 'icms_event_registration';
+
+  // Replace the filter in place so its position in the list is preserved.
+  $replaced = [];
+  foreach ($filters as $key => $filter) {
+    if ($key === 'webform_id') {
+      $replaced['icms_webform_id'] = [
+        'id' => 'icms_webform_id',
+        'table' => 'webform_submission',
+        'field' => 'icms_webform_id',
+        'plugin_id' => 'string',
+        'operator' => '=',
+        'value' => $webform_id,
+      ];
+      continue;
+    }
+    $replaced[$key] = $filter;
+  }
+
+  $display['default']['display_options']['filters'] = $replaced;
+  $view->set('display', $display);
+
+  // The replacement filter is provided by this module's hook_views_data_alter()
+  // and has to be known before the view is saved, or its handler is broken.
+  \Drupal::service('views.views_data')->clear();
+  $view->save();
+
+  return new TranslatableMarkup('Replaced the bundle filter on the event_registrations view with a raw webform ID filter, dropping the config dependency on webform.webform.@id.', [
+    '@id' => $webform_id,
+  ]);
+}

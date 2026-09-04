@@ -9,6 +9,39 @@ use Drupal\node\NodeInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 
 /**
+ * Implements hook_views_data_alter().
+ *
+ * Exposes the raw webform_id column of {webform_submission} as a plain string
+ * filter, so a view can restrict itself to one webform without depending on
+ * that webform's configuration.
+ *
+ * Views' default handler for the bundle key is the "bundle" filter, which
+ * records every selected bundle as a *config dependency* of the view. ICMS
+ * webforms are installed by their logic module and `webform.webform.*` is
+ * listed in config_ignore, so they never reach the config sync directory. A
+ * view carrying that dependency therefore fails config import on any
+ * environment where the webform is not in active config yet — the module is
+ * installed by the very import that validates the view (ICMS-640).
+ *
+ * The raw filter produces the identical WHERE clause without the dependency.
+ */
+function icms_bundle_event_logic_views_data_alter(array &$data) {
+  if (!isset($data['webform_submission']['webform_id'])) {
+    return;
+  }
+
+  $data['webform_submission']['icms_webform_id'] = [
+    'title' => t('Webform ID (raw)'),
+    'help' => t('Filters submissions by webform ID without adding a configuration dependency on the webform.'),
+    'filter' => [
+      'id' => 'string',
+      'real field' => 'webform_id',
+      'allow empty' => FALSE,
+    ],
+  ];
+}
+
+/**
  * Implements hook_form_alter().
  *
  * Dynamically populates the occurrence_id exposed filter on the
