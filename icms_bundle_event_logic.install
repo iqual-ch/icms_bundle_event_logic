@@ -5,7 +5,6 @@
  * Update hooks for ICMS Event bundle.
  */
 
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\Yaml\Yaml;
 
@@ -136,85 +135,6 @@ function icms_bundle_event_logic_update_9002() {
   $index->save();
 
   return new TranslatableMarkup('Renamed the events_listing parent_id field to nid.');
-}
-
-/**
- * Add the event calendar settings and their GraphQL exposure.
- */
-function icms_bundle_event_logic_update_9003() {
-  $messages = [];
-
-  // Import the default calendar settings shipped in config/install.
-  $config = \Drupal::configFactory()->getEditable('icms_bundle_event_logic.calendar_settings');
-  if ($config->isNew()) {
-    $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
-    $file = DRUPAL_ROOT . '/' . $module_path . '/config/install/icms_bundle_event_logic.calendar_settings.yml';
-    if (is_readable($file)) {
-      $config->setData(Yaml::parseFile($file))->save(TRUE);
-      $messages[] = 'Imported the default calendar settings.';
-    }
-  }
-  else {
-    $messages[] = 'Calendar settings already present.';
-  }
-
-  // Enable the icms_event_calendar schema extension, as the recipe does for
-  // new installs.
-  $server = \Drupal::configFactory()->getEditable('graphql.graphql_servers.graphql');
-  if ($server->get('schema') !== NULL && !$server->get('schema_configuration.core_composable.extensions.icms_event_calendar')) {
-    $server->set('schema_configuration.core_composable.extensions.icms_event_calendar', 'icms_event_calendar');
-    $server->save(TRUE);
-    $messages[] = 'Enabled the icms_event_calendar GraphQL schema extension.';
-  }
-
-  return implode(' ', $messages);
-}
-
-/**
- * Re-import the bundle texts: adds the event calendar strings.
- */
-function icms_bundle_event_logic_update_9004() {
-  icms_bundle_event_logic_import_default_texts();
-  return 'Re-imported the event bundle texts.';
-}
-
-/**
- * Events listing: stop partitioning the index by language.
- *
- * Occurrence paragraphs are not translatable, so each occurrence exists in
- * exactly one language — but the GraphQL search filtered items by the request
- * language whenever the index carried a language field. An event created in
- * German therefore never appeared on the French site. Removing the langcode
- * field makes every occurrence visible in every language; parent nodes still
- * resolve in the request language.
- */
-function icms_bundle_event_logic_update_9005() {
-  /** @var \Drupal\search_api\IndexInterface|null $index */
-  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
-  if (!$index) {
-    return 'No events_listing index on this site.';
-  }
-
-  if ($index->getField('langcode')) {
-    $index->removeField('langcode');
-  }
-
-  // Drop the field from the processors that reference it.
-  foreach (['tokenizer', 'ignorecase'] as $processor_id) {
-    $settings = $index->getProcessors()[$processor_id] ?? NULL;
-    if ($settings) {
-      $configuration = $settings->getConfiguration();
-      if (!empty($configuration['fields'])) {
-        $configuration['fields'] = array_values(array_diff($configuration['fields'], ['langcode']));
-        $settings->setConfiguration($configuration);
-      }
-    }
-  }
-
-  $index->save();
-  $index->reindex();
-
-  return 'Removed the language partition from the events_listing index and queued a reindex.';
 }
 
 /**
@@ -606,4 +526,83 @@ function icms_bundle_event_logic_update_9010() {
   }
 
   return implode(' ', $messages);
+}
+
+/**
+ * Add the event calendar settings and their GraphQL exposure.
+ */
+function icms_bundle_event_logic_update_9011() {
+  $messages = [];
+
+  // Import the default calendar settings shipped in config/install.
+  $config = \Drupal::configFactory()->getEditable('icms_bundle_event_logic.calendar_settings');
+  if ($config->isNew()) {
+    $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
+    $file = DRUPAL_ROOT . '/' . $module_path . '/config/install/icms_bundle_event_logic.calendar_settings.yml';
+    if (is_readable($file)) {
+      $config->setData(Yaml::parseFile($file))->save(TRUE);
+      $messages[] = 'Imported the default calendar settings.';
+    }
+  }
+  else {
+    $messages[] = 'Calendar settings already present.';
+  }
+
+  // Enable the icms_event_calendar schema extension, as the recipe does for
+  // new installs.
+  $server = \Drupal::configFactory()->getEditable('graphql.graphql_servers.graphql');
+  if ($server->get('schema') !== NULL && !$server->get('schema_configuration.core_composable.extensions.icms_event_calendar')) {
+    $server->set('schema_configuration.core_composable.extensions.icms_event_calendar', 'icms_event_calendar');
+    $server->save(TRUE);
+    $messages[] = 'Enabled the icms_event_calendar GraphQL schema extension.';
+  }
+
+  return implode(' ', $messages);
+}
+
+/**
+ * Re-import the bundle texts: adds the event calendar strings.
+ */
+function icms_bundle_event_logic_update_9012() {
+  icms_bundle_event_logic_import_default_texts();
+  return 'Re-imported the event bundle texts.';
+}
+
+/**
+ * Events listing: stop partitioning the index by language.
+ *
+ * Occurrence paragraphs are not translatable, so each occurrence exists in
+ * exactly one language — but the GraphQL search filtered items by the request
+ * language whenever the index carried a language field. An event created in
+ * German therefore never appeared on the French site. Removing the langcode
+ * field makes every occurrence visible in every language; parent nodes still
+ * resolve in the request language.
+ */
+function icms_bundle_event_logic_update_9013() {
+  /** @var \Drupal\search_api\IndexInterface|null $index */
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
+  if (!$index) {
+    return 'No events_listing index on this site.';
+  }
+
+  if ($index->getField('langcode')) {
+    $index->removeField('langcode');
+  }
+
+  // Drop the field from the processors that reference it.
+  foreach (['tokenizer', 'ignorecase'] as $processor_id) {
+    $settings = $index->getProcessors()[$processor_id] ?? NULL;
+    if ($settings) {
+      $configuration = $settings->getConfiguration();
+      if (!empty($configuration['fields'])) {
+        $configuration['fields'] = array_values(array_diff($configuration['fields'], ['langcode']));
+        $settings->setConfiguration($configuration);
+      }
+    }
+  }
+
+  $index->save();
+  $index->reindex();
+
+  return 'Removed the language partition from the events_listing index and queued a reindex.';
 }
