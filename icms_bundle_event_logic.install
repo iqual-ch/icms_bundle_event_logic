@@ -108,6 +108,31 @@ function icms_bundle_event_logic_update_9001() {
 }
 
 /**
+ * Rename the events_listing parent_id field to nid.
+ */
+function icms_bundle_event_logic_update_9002() {
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
+  if (!$index) {
+    return new TranslatableMarkup('events_listing index not found, nothing to do.');
+  }
+
+  $fields = $index->getFields();
+  if (isset($fields['nid']) || !isset($fields['parent_id'])) {
+    return new TranslatableMarkup('events_listing index already exposes nid.');
+  }
+
+  // Listings exclude the node they are placed on through a nid condition;
+  // for indexed occurrence paragraphs that is the parent node's ID. Renaming
+  // through the index API keeps the indexed data and updates processor
+  // field lists.
+  $index->renameField('parent_id', 'nid');
+  $index->getField('nid')->setLabel('Parent node ID');
+  $index->save();
+
+  return new TranslatableMarkup('Renamed the events_listing parent_id field to nid.');
+}
+
+/**
  * Helper function to install a webform from a YAML config file.
  *
  * This shared utility can be used by any module that needs to install webforms
