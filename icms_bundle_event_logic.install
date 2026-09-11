@@ -350,10 +350,13 @@ function icms_bundle_event_logic_update_9006(array &$sandbox) {
 
   if (!isset($sandbox['ids'])) {
     // Only submissions that are not already attached to a node need looking at.
-    $sandbox['ids'] = array_values($storage->getQuery()
-      ->accessCheck(FALSE)
+    // A submission without any source entity has a NULL entity_type, which a
+    // plain "<>" comparison would leave out.
+    $query = $storage->getQuery()->accessCheck(FALSE);
+    $query->condition($query->orConditionGroup()
       ->condition('entity_type', 'node', '<>')
-      ->execute());
+      ->notExists('entity_type'));
+    $sandbox['ids'] = array_values($query->execute());
     $sandbox['total'] = count($sandbox['ids']);
     $sandbox['updated'] = 0;
   }
