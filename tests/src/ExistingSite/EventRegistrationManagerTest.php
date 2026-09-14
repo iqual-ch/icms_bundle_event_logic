@@ -8,6 +8,7 @@ use Drupal\webform\Entity\Webform;
 use Drupal\webform\Entity\WebformSubmission;
 use Drupal\webform\WebformInterface;
 use weitzman\DrupalTestTraits\ExistingSiteBase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests that event registrations stay readable through Webform's own results.
@@ -17,9 +18,8 @@ use weitzman\DrupalTestTraits\ExistingSiteBase;
  * Editors now duplicate the form to collect different data, so the listing has
  * to follow whatever elements the form actually has, and submissions have to be
  * attached to the event they were made from for Webform to find them.
- *
- * @group icms_bundle_event_logic
  */
+#[Group('icms_bundle_event')]
 class EventRegistrationManagerTest extends ExistingSiteBase {
 
   /**
@@ -34,6 +34,10 @@ class EventRegistrationManagerTest extends ExistingSiteBase {
    */
   protected function setUp(): void {
     parent::setUp();
+
+    if (!\Drupal::moduleHandler()->moduleExists('icms_bundle_event_logic')) {
+      $this->markTestSkipped('The event bundle is not installed on this site.');
+    }
 
     $this->manager = \Drupal::service('icms_bundle_event_logic.registration_manager');
   }

@@ -9,6 +9,7 @@ use Drupal\icms_bundle_event_logic\EventRegistrations;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\webform\Entity\WebformSubmission;
 use weitzman\DrupalTestTraits\ExistingSiteBase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests the rules behind the event registrations screen.
@@ -16,9 +17,8 @@ use weitzman\DrupalTestTraits\ExistingSiteBase;
  * An event has several dates and a person may register more than once, because
  * Webform keeps every submission. What an editor needs to read is one date at a
  * time with one row per person, and a CSV of exactly that.
- *
- * @group icms_bundle_event_logic
  */
+#[Group('icms_bundle_event')]
 class EventRegistrationsTest extends ExistingSiteBase {
 
   /**
@@ -45,6 +45,10 @@ class EventRegistrationsTest extends ExistingSiteBase {
    */
   protected function setUp(): void {
     parent::setUp();
+
+    if (!\Drupal::moduleHandler()->moduleExists('icms_bundle_event_logic')) {
+      $this->markTestSkipped('The event bundle is not installed on this site.');
+    }
 
     $this->registrations = \Drupal::service('icms_bundle_event_logic.event_registrations');
 
