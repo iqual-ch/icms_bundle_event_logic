@@ -606,3 +606,23 @@ function icms_bundle_event_logic_update_9013() {
 
   return 'Removed the language partition from the events_listing index and queued a reindex.';
 }
+
+/**
+ * Let editors choose the original language of events.
+ *
+ * Mirrors the recipe: the language selector is enabled for the content type
+ * and placed above the form tabs. The shared helper lives in icms_core_logic,
+ * which every ICMS site has installed.
+ */
+function icms_bundle_event_logic_update_9014() {
+  \Drupal::moduleHandler()->loadInclude('icms_core_logic', 'install');
+  if (!function_exists('_icms_core_logic_enable_original_language_selection')) {
+    return (string) new TranslatableMarkup('Skipped: icms_core_logic is missing the language selection helper, update it first.');
+  }
+
+  $messages = _icms_core_logic_enable_original_language_selection('node', 'icms_event');
+  if (!$messages) {
+    return (string) new TranslatableMarkup('The original language of events was already selectable.');
+  }
+  return implode(' ', $messages);
+}
