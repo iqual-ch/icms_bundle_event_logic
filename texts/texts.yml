@@ -1,3 +1,10 @@
+add_to_calendar:
+  context: event
+  default:
+    en: 'Add to calendar'
+    de: 'Zum Kalender hinzufügen'
+    fr: 'Ajouter au calendrier'
+    it: 'Aggiungi al calendario'
 all_day:
   context: event
   default:
