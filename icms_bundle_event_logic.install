@@ -288,7 +288,17 @@ function icms_bundle_event_logic_update_9004() {
     return new TranslatableMarkup('webform_node is already installed.');
   }
 
-  \Drupal::service('module_installer')->install(['webform_node']);
+  // Takes the module's config from the export once that lists it, so its node
+  // type and fields keep the exported UUIDs (ICMS-816). The service comes
+  // with icms_core_logic, which this module does not depend on.
+  if (\Drupal::hasService('icms_core_logic.update_config_installer')) {
+    if (\Drupal::service('icms_core_logic.update_config_installer')->installModules(['webform_node'])) {
+      return new TranslatableMarkup('Installed webform_node; its config entities are left to the config import.');
+    }
+  }
+  else {
+    \Drupal::service('module_installer')->install(['webform_node']);
+  }
 
   return new TranslatableMarkup('Installed webform_node.');
 }
@@ -475,6 +485,11 @@ function icms_bundle_event_logic_update_9010() {
   // The copies in config/update/9002 are identical to the recipe's.
   $module_path = \Drupal::service('extension.list.module')->getPath('icms_bundle_event_logic');
   $storage = \Drupal::entityTypeManager()->getStorage('date_format');
+  // Formats the project exports are created from the export, keeping their
+  // UUIDs (ICMS-816). The service comes with icms_core_logic, which this
+  // module does not depend on.
+  /** @var \Drupal\icms_core_logic\UpdateConfigInstaller|null $installer */
+  $installer = \Drupal::hasService('icms_core_logic.update_config_installer') ? \Drupal::service('icms_core_logic.update_config_installer') : NULL;
   foreach (['icms_event_date', 'icms_event_time'] as $format_id) {
     if ($storage->load($format_id)) {
       $messages[] = "Date format $format_id already exists.";
@@ -486,7 +501,9 @@ function icms_bundle_event_logic_update_9010() {
       continue;
     }
     $data = Yaml::parseFile($file);
-    $storage->createFromStorageRecord($data)->save();
+    if (!$installer?->importConfigEntity('core.date_format.' . $format_id, $data)) {
+      $storage->createFromStorageRecord($data)->save();
+    }
     $messages[] = "Created date format $format_id.";
   }
 
