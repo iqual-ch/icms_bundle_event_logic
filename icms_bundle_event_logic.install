@@ -293,7 +293,7 @@ function icms_bundle_event_logic_update_9004() {
   // with icms_core_logic, which this module does not depend on.
   if (\Drupal::hasService('icms_core_logic.update_config_installer')) {
     if (\Drupal::service('icms_core_logic.update_config_installer')->installModules(['webform_node'])) {
-      return new TranslatableMarkup('Installed webform_node; its config entities are left to the config import.');
+      return new TranslatableMarkup('Installed webform_node with its config from the export.');
     }
   }
   else {
@@ -500,9 +500,8 @@ function icms_bundle_event_logic_update_9010() {
       \Drupal::logger('icms_bundle_event_logic')->error('Date format config file not found: @file', ['@file' => $file]);
       continue;
     }
-    $data = Yaml::parseFile($file);
-    if (!$installer?->importConfigEntity('core.date_format.' . $format_id, $data)) {
-      $storage->createFromStorageRecord($data)->save();
+    if (!$installer?->importConfigEntity('core.date_format.' . $format_id)) {
+      $storage->createFromStorageRecord(Yaml::parseFile($file))->save();
     }
     $messages[] = "Created date format $format_id.";
   }
