@@ -116,7 +116,10 @@ function icms_bundle_event_logic_update_9001() {
  * Rename the events_listing parent_id field to nid.
  */
 function icms_bundle_event_logic_update_9002() {
-  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
+  // Loaded without translations: in drush, load() applies the default
+  // language's config translation, and saving that writes it into the base
+  // config (ICMS-839).
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->loadOverrideFree('events_listing');
   if (!$index) {
     return new TranslatableMarkup('events_listing index not found, nothing to do.');
   }
@@ -232,7 +235,7 @@ function icms_bundle_event_logic_install_webform($config_name, $module_name) {
  */
 function icms_bundle_event_logic_update_9003() {
   $storage = \Drupal::entityTypeManager()->getStorage('view');
-  $view = $storage->load('event_registrations');
+  $view = $storage->loadOverrideFree('event_registrations');
 
   if (!$view) {
     return new TranslatableMarkup('The event_registrations view does not exist, nothing to update.');
@@ -413,7 +416,7 @@ function icms_bundle_event_logic_update_9007() {
   $manager = \Drupal::service('icms_bundle_event_logic.registration_manager');
 
   $updated = [];
-  foreach (\Drupal::entityTypeManager()->getStorage('webform')->loadMultiple() as $webform) {
+  foreach (\Drupal::entityTypeManager()->getStorage('webform')->loadMultipleOverrideFree() as $webform) {
     if ($manager->grantResultsAccess($webform)) {
       $webform->save();
       $updated[] = $webform->id();
@@ -596,7 +599,7 @@ function icms_bundle_event_logic_update_9012() {
  */
 function icms_bundle_event_logic_update_9013() {
   /** @var \Drupal\search_api\IndexInterface|null $index */
-  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('events_listing');
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->loadOverrideFree('events_listing');
   if (!$index) {
     return 'No events_listing index on this site.';
   }
