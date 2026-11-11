@@ -49,7 +49,14 @@ function icms_bundle_event_logic_install() {
 }
 
 /**
- * Imports default text entities from the package-local texts file.
+ * Imports the missing default texts from the package-local texts file.
+ *
+ * Existing texts are left unchanged, so update hooks can call this to add new
+ * entries without resetting what editors changed. Languages the site lacks or
+ * has locked are skipped.
+ *
+ * @throws \RuntimeException
+ *   When the texts file is invalid or a text cannot be imported.
  */
 function icms_bundle_event_logic_import_default_texts(): void {
   $module_name = 'icms_bundle_event_logic';
@@ -68,25 +75,31 @@ function icms_bundle_event_logic_import_default_texts(): void {
     return;
   }
 
-  try {
-    $data = Yaml::parseFile($texts_file);
-    if (!is_array($data) || empty($data)) {
-      \Drupal::logger($module_name)->warning('Skipped texts import during install because YAML was empty or invalid: @path', ['@path' => $texts_file]);
-      return;
-    }
-
-    /** @var \Drupal\texts_sync\TextsSyncService $texts_sync */
-    $texts_sync = \Drupal::service('texts_sync.service');
-    $stats = $texts_sync->import($data, NULL, TRUE);
-
-    \Drupal::logger($module_name)->notice('Imported default texts during install. Created: @created, Updated: @updated, Skipped: @skipped.', [
-      '@created' => (int) ($stats['created'] ?? 0),
-      '@updated' => (int) ($stats['updated'] ?? 0),
-      '@skipped' => (int) ($stats['skipped'] ?? 0),
-    ]);
+  $data = Yaml::parseFile($texts_file);
+  if (!is_array($data) || empty($data)) {
+    throw new \RuntimeException(sprintf('The default texts file is empty or invalid: %s', $texts_file));
   }
-  catch (\Throwable $e) {
-    \Drupal::logger($module_name)->error('Failed to import default texts during install: @message', ['@message' => $e->getMessage()]);
+
+  // Only missing texts are created: an existing text keeps the wording
+  // editors gave it, in every language.
+  /** @var \Drupal\texts_sync\TextsSyncService $texts_sync */
+  $texts_sync = \Drupal::service('texts_sync.service');
+  $stats = $texts_sync->import($data, NULL, FALSE);
+
+  $logger = \Drupal::logger($module_name);
+  $logger->notice('Imported default texts. Created: @created, kept existing: @skipped, failed: @failed.', [
+    '@created' => $stats['created'],
+    '@skipped' => $stats['skipped'],
+    '@failed' => $stats['failed'],
+  ]);
+  foreach ($stats['errors'] as $message) {
+    if (!str_contains($message, 'already exists')) {
+      $logger->warning($message);
+    }
+  }
+
+  if ($stats['failed'] > 0) {
+    throw new \RuntimeException(sprintf('Failed to import %d default texts: %s', $stats['failed'], implode(' ', preg_grep('/^Failed to import/', $stats['errors']))));
   }
 }
 
@@ -580,11 +593,11 @@ function icms_bundle_event_logic_update_9011() {
 }
 
 /**
- * Re-import the bundle texts: adds the event calendar strings.
+ * Import the missing bundle texts: adds the event calendar strings.
  */
 function icms_bundle_event_logic_update_9012() {
   icms_bundle_event_logic_import_default_texts();
-  return 'Re-imported the event bundle texts.';
+  return 'Imported the missing event bundle texts. Existing texts are unchanged.';
 }
 
 /**
