@@ -658,3 +658,28 @@ function icms_bundle_event_logic_update_9014() {
   }
   return implode(' ', $messages);
 }
+
+/**
+ * Occurrence location map: set the coordinates from a geocoder result.
+ *
+ * Geolocation 4.1 only places the marker and fills lat/lng for a picked
+ * address when the widget's "Set result on geocode" setting is on, which
+ * defaults to off. Without it, the geocoder only re-centres the map and the
+ * coordinates keep their old values.
+ */
+function icms_bundle_event_logic_update_9015() {
+  $form_display_id = 'paragraph.icms_event_occurrence.default';
+  /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface|null $display */
+  $display = \Drupal::entityTypeManager()->getStorage('entity_form_display')->loadOverrideFree($form_display_id);
+  $component = $display?->getComponent('field_icms_coordinates');
+  if (($component['type'] ?? NULL) !== 'geolocation_map') {
+    return (string) new TranslatableMarkup('Skipped: the event occurrence form has no geolocation map widget for the coordinates.');
+  }
+  if (!empty($component['settings']['set_result_on_geocode'])) {
+    return (string) new TranslatableMarkup('The event occurrence map already sets the coordinates from a geocoder result.');
+  }
+
+  $component['settings']['set_result_on_geocode'] = TRUE;
+  $display->setComponent('field_icms_coordinates', $component)->save();
+  return (string) new TranslatableMarkup('The event occurrence map now sets the coordinates from a geocoder result.');
+}
